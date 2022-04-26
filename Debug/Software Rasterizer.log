@@ -1,0 +1,14 @@
+﻿  Application.cpp
+  Renderer.cpp
+C:\Dev\Software Rasterizer\source\Renderer.cpp(51,14): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(53,10): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(59,14): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(61,10): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(75,18): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(76,13): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(77,21): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(86,13): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+C:\Dev\Software Rasterizer\source\Renderer.cpp(87,21): warning C4244: 'initializing': conversion from 'double' to 'int', possible loss of data
+  main.cpp
+  Generating Code...
+  Software Rasterizer.vcxproj -> C:\Dev\Software Rasterizer\Debug\Software Rasterizer.exe

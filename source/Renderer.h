@@ -3,40 +3,48 @@
 
 #include <vector>
 #include <iostream>
+#include <limits>
+#include <cmath>
+#include <cstdlib>
+#include <algorithm>
 
-const int WIDTH  = 1000;
-const int HEIGHT = 1000;
-
-const std::vector<vec2> lineVertices = {
-	{20.0f, 20.0f},
-	{20.0f, 80.0f}, 
-	{80.0f, 80.0f}, 
-	{80.0f, 20.0f}, 
-};
-
-const std::vector<vec2> triVertices = {
-	{20.0f, 120.0f},
-	{310.0f, 600.0f},
-	{600.0f, 20.0f},
-	{300.0f, 420.0f},
-	{60.0f, 450.0f},
-	{900.0f, 420.0f},
-};
+const int WIDTH  = 4000;
+const int HEIGHT = 4000;
 
 class Renderer {
 private:
-	std::vector<Pixel> m_pixels;
+	std::vector<std::vector<vec3>> m_vBuffers;
+	std::vector<std::vector<vec3>> m_nBuffers;
+	std::vector<std::vector<vec2>> m_uvs;
+	std::vector<IndexBuffer> m_iBuffers;
+	std::vector<IndexBuffer> m_inBuffers;
+	std::vector<IndexBuffer> m_uviBuffers;
+	std::vector<Fragment> m_frags;
+	Sampler* m_sampler;
 public:
 	Renderer();
 	~Renderer();
 
 	void init();
+	void submitVBuffer(std::vector<vec3>& vBuffer, std::vector<vec3>& nBuffer, std::vector<vec2>& uvs, IndexBuffer& iBuffer, IndexBuffer& inBuffer, IndexBuffer& uvBuffer);
+	void draw();
+
+
 	void saveFile(const char* name);
 	void setPix(int x, int y, Color& p);
 	void trySetPix(int x, int y, Color& p);
-	void drawLine(vec2 p0, vec2 p1, Color& color);
-	void drawTri(vec2 p0, vec2 p1, vec2 p2, Color& color);
+	void trySetZ(int x, int y, float z);
+	float tryGetZ(int x, int y);
+	void trySetNorm(int x, int y, vec3& norm);
+	void drawLine(vec2i p0, vec2i p1, Color& color);
+	void triangle(vec3* pts, Color color);
+	void gourardTriangle(vec3* pts, vec2* uvs, vec3 ity);
 private:
 	inline int ind(int x, int y) { return y * WIDTH + x; }
+
+	void vertexPass(std::vector<std::vector<vec3>>& screenSpaceVerts);
+	void rasterize(std::vector<std::vector<vec3>>&verts);
+	void fragmentPass();
+
 };
 

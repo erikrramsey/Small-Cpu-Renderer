@@ -1,1 +1,5 @@
 .vs/
+assets/
+x64/
+Debug/
+output.tga

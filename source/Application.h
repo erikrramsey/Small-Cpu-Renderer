@@ -2,9 +2,13 @@
 
 #include "Renderer.h"
 #include "RendererHeaders.h"
+#include "Model.h"
 
 #include <iostream>
 #include <string>
+#include <random>
+#include <vector>
+#include <chrono>
 
 class Application {
 public:
@@ -12,8 +16,7 @@ public:
 	~Application();
 	void run();
 
-	void testDrawingLine();
-	void testDrawingTriangle();
 private:
 	Renderer* m_renderer;
+	std::vector<Model> m_models;
 };

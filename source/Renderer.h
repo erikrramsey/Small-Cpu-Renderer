@@ -37,14 +37,15 @@ public:
 	float tryGetZ(int x, int y);
 	void trySetNorm(int x, int y, vec3& norm);
 	void drawLine(vec2i p0, vec2i p1, Color& color);
-	void triangle(vec3* pts, Color color);
-	void gourardTriangle(vec3* pts, vec2* uvs, vec3 ity);
+	void triangle(vec3* pts, vec2* uvs, vec3* norms);
 private:
 	inline int ind(int x, int y) { return y * WIDTH + x; }
 
 	void vertexPass(std::vector<std::vector<vec3>>& screenSpaceVerts);
 	void rasterize(std::vector<std::vector<vec3>>&verts);
 	void fragmentPass();
+
+	vec3 cameraPos = { 0.3f, 0.3f, 1.0f };
 
 };
 

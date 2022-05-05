@@ -67,6 +67,10 @@ struct vec3t {
 		return x == rhs.x && y == rhs.y && z == rhs.z;
 	}
 
+	vec3t<T> operator-() {
+		return vec3t<T>(-x, -y, -z);
+	}
+
 	vec3t<T> cross(const vec3t<T>& rhs) {
 		return vec3t<T>(y*rhs.z - z*rhs.y, z*rhs.x - x*rhs.z, x*rhs.y - y*rhs.x);
 	}

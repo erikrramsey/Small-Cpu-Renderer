@@ -102,37 +102,16 @@ vec3 barycentric(vec2 A, vec2 B, vec2 C, vec2i P) {
 	return vec3(-1, 1, 1);
 }
 
-
-void Renderer::triangle(vec3* pts, Color color) {
-	vec2 bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
-	vec2 bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 2; j++) {
-			bboxmin[j] = std::min(bboxmin[j], pts[i][j]);
-			bboxmax[j] = std::max(bboxmax[j], pts[i][j]);
-		}
-	}
-	vec2i P;
-	for (P.x = bboxmin.x; P.x <= bboxmax.x; P.x++) {
-		for (P.y = bboxmin.y; P.y <= bboxmax.y; P.y++) {
-			vec3 c = barycentric({ pts[0].x, pts[0].y }, { pts[1].x, pts[1].y }, { pts[2].x, pts[2].y }, P);
-			float z = pts[0].z * c.x + pts[1].z * c.y + pts[2].z * c.z;
-			//if (c.x < 0 || c.y < 0 || c.z<0 || tryGetZ(P.x, P.y) > z) continue;
-			trySetPix(P.x, P.y, color);
-			trySetZ(P.x, P.y, z);
-		}
-	}
-}
-
 float interp(float y1, float y2, float ity1, float ity2, float p) {
 	auto v = (y2 - p) / (y2 - y1);
 	auto ity = ity2 - (v * (ity2 - ity1));
 	return ity;
 }
 
-void Renderer::gourardTriangle(vec3* pts, vec2* uvs, vec3 ity) {
+void Renderer::triangle(vec3* pts, vec2* uvs, vec3* norms) {
 	vec2 bboxmin(std::numeric_limits<float>::max(), std::numeric_limits<float>::max());
 	vec2 bboxmax(-std::numeric_limits<float>::max(), -std::numeric_limits<float>::max());
+	vec3 lightDir = { 3.0f, 0.5, 0.5 };
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 2; j++) {
 			bboxmin[j] = std::min(bboxmin[j], pts[i][j]);
@@ -145,18 +124,25 @@ void Renderer::gourardTriangle(vec3* pts, vec2* uvs, vec3 ity) {
 			vec3 c = barycentric({ pts[0].x, pts[0].y }, { pts[1].x, pts[1].y }, { pts[2].x, pts[2].y }, P);
 			float z = pts[0].z * c.x + pts[1].z * c.y + pts[2].z * c.z;
 			if (c.x < 0 || c.y < 0 || c.z<0 || tryGetZ(P.x, P.y) > z) continue;
-			Color color = { 12, 12, 12, 255 };
-			if (ity.x < 0) ity.x = 0;
-			if (ity.y < 0) ity.y = 0;
-			if (ity.z < 0) ity.z = 0;
-			auto intensity = c.x * ity.x + c.y * ity.y + c.z * ity.z;
-			auto uvx = c.x * uvs[0].x + c.y * uvs[1].x + c.z * uvs[2].x;
-			auto uvy = c.x * uvs[0].y + c.y * uvs[1].y + c.z * uvs[2].y;
-			Color col;
-			col.m_color = m_sampler->at(1 - uvx, 1 - uvy);
+
+			auto uv = uvs[0] * c.x + uvs[1] * c.y + uvs[2] * c.z;
+
+			auto normal = (norms[0] * c.x) + (norms[1] * c.y) + (norms[2] * c.z);
+			auto diffuse = std::max((lightDir.normalize() * normal.normalize()), 0.0f);
+
+			auto& reflect = (lightDir - (normal * 2 * (lightDir * normal))).normalize();
+			float spec = std::pow(std::max(reflect * -cameraPos.normalize(), 0.0f), 8.0f);
+
+			auto ambient = 0.3f;
+			auto intensity = spec + diffuse + ambient;
+
+			Color col(m_sampler->at(1 - uv.x, 1 - uv.y));
 			auto bgra = col.m_color.bgra;
-			Color real = { (int)(bgra[2] * intensity), (int)(bgra[1] * intensity), (int)(bgra[0] * intensity), (int)(bgra[3]) };
-			trySetPix(P.x, P.y, real);
+			int r = (int)std::min(bgra[2] * intensity, 255.0f);
+			int g = (int)std::min(bgra[1] * intensity, 255.0f);
+			int b = (int)std::min(bgra[0] * intensity, 255.0f);
+			Color color = { r, g, b, bgra[3] };
+			trySetPix(P.x, P.y, color);
 			trySetZ(P.x, P.y, z);
 		}
 	}
@@ -202,7 +188,6 @@ mat4 lookat(vec3 eye, vec3 center, vec3 up) {
 
 void Renderer::vertexPass(std::vector<std::vector<vec3>>& screenSpaceVerts) {
 	mat4 model;
-	model[11] = -22.0f;
 
 	for (int i = 0; i < m_vBuffers.size(); i++) {
 		auto& verts = m_vBuffers[i];
@@ -217,7 +202,7 @@ void Renderer::vertexPass(std::vector<std::vector<vec3>>& screenSpaceVerts) {
 
 		proj[14] = dist;
 
-		mat4 modelView = lookat({ 15.3f, 0.3f, 1.0f }, { 0.0, 0, -22.0f }, { 0, 1, 0 });
+		mat4 modelView = lookat(cameraPos, { 0.0, 0, 0.0f }, { 0, 1, 0 });
 		for (int j = 0; j < verts.size(); j++) {
 			vec3 v = view * proj * modelView * model * verts[j];
 			sverts.push_back(v);
@@ -235,19 +220,16 @@ void Renderer::rasterize(std::vector<std::vector<vec3>>& verts) {
 		auto& norms = m_nBuffers[i];
 		auto& uvis = m_uviBuffers[i];
 		auto& uvs = m_uvs[i];
-		for (size_t i = 2; i < inds.size(); i += 3) {
-			vec3 lightDir = { 0, 0.5, 0.5 };
-
-			vec3 intensity = {
-				norms[ninds[i]] * lightDir.normalize(),
-				norms[ninds[i - 1]] * lightDir.normalize(),
-				norms[ninds[i - 2]] * lightDir.normalize()
+		for (size_t j = 2; j < inds.size(); j += 3) {
+			vec3 norm[3] = {
+				norms[ninds[j]],
+				norms[ninds[j - 1]],
+				norms[ninds[j - 2]],
 			};
-			vec3 pts[3] = {vert[inds[i]], vert[inds[i - 1]], vert[inds[i - 2]] };
+			vec3 pts[3] = {vert[inds[j]], vert[inds[j - 1]], vert[inds[j - 2]] };
 
-			vec2 uvs3[3] = { uvs[uvis[i]], uvs[uvis[i - 1]], uvs[uvis[i - 2]] };
-			gourardTriangle(pts, uvs3, intensity);
-
+			vec2 uvs3[3] = { uvs[uvis[j]], uvs[uvis[j - 1]], uvs[uvis[j - 2]] };
+			triangle(pts, uvs3, norm);
 		}
 	}
 }
